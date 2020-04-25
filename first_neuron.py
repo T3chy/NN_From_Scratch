@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-E = 2.71828182846
+import math
 def create_data(points,classes):
     x = np.zeros((points*classes,2))
     y = np.zeros(points*classes, dtype='uint8')
@@ -25,12 +25,28 @@ class Activation_ReLU:
         self.output = np.maximum(0,inputs)
 class Activation_Softmax:
     def forward(self,inputs):
-        exp_values = np.exp(inputs = np.max(inputs, axis=1, keepdims=True))
+        exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
         probs = exp_values / np.sum(exp_values,axis=1,keepdims=True)
         self.output = probs
-X, y = create_data(100,3)
+class Loss_categoricalCrossEntropy:
+    def forward(self, y_pred, y_true):
+        print(self)
+        samples = len(y_pred)
+        y_pred = y_pred[range(samples),y_true]
+        negative_log_likelihoods = -np.log(y_pred)
+        data_loss = np.mean(negative_log_likelihoods)
+        return data_loss
+X, Y = create_data(100,3)
 dense1 = Layer_Dense(2,3)
-dense1.forward(X)
 activation1 = Activation_ReLU()
-activation1.forward(dense1.output[:5])
-print(activation1.output[:5])
+dense2 = Layer_Dense(3,3)
+activation2 = Activation_Softmax()
+dense1.forward(X)
+activation1.forward(dense1.output)
+dense2.forward(activation1.output)
+activation2.forward(dense2.output)
+loss_function = Loss_categoricalCrossEntropy()
+print(activation2.output[:5])
+pred = activation2.output
+loss = loss_function.forward(pred, Y)
+print('loss:', loss)
