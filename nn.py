@@ -13,10 +13,14 @@ def create_data(points,classes):
         y[ix] = class_number
         return x,y
 class Layer_Dense:
-    def __init__(self,inputs,neurons):
+    def __init__(self,inputs,neurons,weight_regularizer_l1=0,weight_regularizer_l2=0,bias_regularizer_l1=0,bias_regularizer_l2=0):
         # init weights and biases
         self.weights = .01 * np.random.randn(inputs,neurons)
         self.biases = np.zeros(shape=(1,neurons))
+        self.weight_regularizer_l1 = weight_regularizer_l1
+        self.weight_regularizer_l2 = weight_regularizer_l2
+        self.bias_regularizer_l1 = bias_regularizer_l1
+        self.bias_regularizer_l2 = bias_regularizer_l2
     def forward(self,inputs):
         #calc output values from inputs w/ weights and biases
         self.output = np.dot(inputs,self.weights) + self.biases
@@ -39,7 +43,24 @@ class Activation_Softmax:
         self.output = probs
     def backward(self,dvalues):
         self.dvalues = dvalues.copy()
-class Loss_categoricalCrossEntropy:
+class Loss:
+    def regularization_loss(self,layer):
+        regularization_loss = 0
+        # L1 regularization- weights
+        if layer.weight_regularizer_l1 > 0:
+            regularization_loss += layer.weight_regularizer_l1 * np.sum(np.abs(layer.weights))
+        # L2 regularization- biases
+        if layer.weight_regularizer_l2 > 0:
+            regularization_loss += layer.weight_regularizer_l2 * np.sum(layer.weights*layer.weights)
+        # L1 regularization- weights
+        if layer.weight_regularizer_l1 > 0:
+            regularization_loss += layer.bias_regularizer_l1 * np.sum(np.abs(layer.biases))
+        # L2 regularization- biases
+        if layer.weight_regularizer_l2 > 0:
+            regularization_loss += layer.bias_regularizer_l2 * np.sum(layer.biases*layer.biases)
+        return regularization_loss
+class Loss_categoricalCrossEntropy(Loss):
+
     def forward(self, y_pred, y_true):
         print(self)
         samples = len(y_pred)
@@ -154,12 +175,13 @@ class Optimizer_Adam:
     def post_update_params(self):
         self.iterations += 1
 X, y = create_data(100,3)
+print(X,y)
 dense1 = Layer_Dense(2,64)
 activation1 = Activation_ReLU()
 dense2 = Layer_Dense(64,3)
 activation2 = Activation_ReLU()
 loss_function = Loss_categoricalCrossEntropy()
-optimizer =Optimizer_Adam(decay=4e-8)
+optimizer =Optimizer_SGD()
 for epoch in range(1000000):
     dense1.forward(X)
     activation1.forward(dense1.output)
